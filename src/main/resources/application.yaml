@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: insta-share
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      username: ${REDIS_USERNAME:}
+      password: ${REDIS_PASSWORD:}
+      timeout: 60000
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+
+  docker:
+    compose:
+      enabled: true
+      file: compose.yaml
+
+aws:
+  region: ${AWS_REGION}
+  s3:
+    bucket: ${S3_BUCKET_NAME}
+
+session:
+  default-expiration-hours: 24
+  inactivity-minutes: 30
+  max-items-per-session: 100
+
+server:
+  port: ${SERVER_PORT}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  error:
+    include-message: always
+    include-binding-errors: always
+
+logging:
+  level:
+    root: INFO
+    com.andrewstsai.instashare: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
