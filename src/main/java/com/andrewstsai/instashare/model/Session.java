@@ -9,7 +9,6 @@ import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.TimeToLive;
 import org.springframework.data.redis.core.index.Indexed;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,10 +25,8 @@ public class Session {
     @Indexed
     private String creatorId;
 
-    private String title;
+    private String name;
     private String password;
-    private LocalDateTime createdAt;
-    private LocalDateTime expiresAt;
 
     @Builder.Default
     private Set<String> activeParticipants = new HashSet<>();
@@ -37,9 +34,8 @@ public class Session {
     @Builder.Default
     private Boolean isLocked = false;
 
-    private Integer maxUploads;
     private Long maxStorageBytes;
 
     @TimeToLive
-    private Integer expiration;
+    private Long ttl = 10800L;
 }

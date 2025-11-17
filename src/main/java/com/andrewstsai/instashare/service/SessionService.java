@@ -16,10 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,99 +32,69 @@ public class SessionService {
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    @Value("${session.default-expiration-hours:24}")
-    private int defaultExpirationHours;
-
     public SessionResponse createSession(CreateSessionRequest request) {
         String sessionId = generateSessionId();
 
-        int expirationHours = request.getExpirationHours() != null
-                ? request.getExpirationHours()
-                : defaultExpirationHours;
-
         Session session = Session.builder()
-                .id(sessionId)
-                .creatorId(generateUserId())
-                .title(request.getName() != null ? request.getName() : "Untitled Session")
-                .createdAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusHours(expirationHours))
-                .expiration(expirationHours * 3600)
-                .build();
+            .id(sessionId)
+            .name(request.getName() != null ? request.getName() : "Untitled Session")
+            .build();
 
         sessionRepository.save(session);
 
         log.info("Session created: {} by {}", sessionId, session.getCreatorId());
 
         return SessionResponse.builder()
-                .id(session.getId())
-                .name(session.getTitle())
-                .isLocked(session.getIsLocked())
-                .shareUrl(generateShareUrl(sessionId))
-                .createdAt(session.getCreatedAt())
-                .expiresAt(session.getExpiresAt())
-                .items(List.of())
-                .build();
+            .id(session.getId())
+            .name(session.getName())
+            .isLocked(session.getIsLocked())
+            .items(List.of())
+            .build();
     }
 
     public SessionResponse getSession(String sessionId) {
         Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found or expired"));
+            .orElseThrow(() -> new RuntimeException("Session not found or expired"));
 
-        // Check if expired (defensive check, Redis should auto-delete)
-        if (session.getExpiresAt() != null && session.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Session has expired");
-        }
-
-        // Fetch items separately in Redis
         List<SessionItemResponse> items = sessionItemRepository.findBySessionId(sessionId).stream()
-                .map(this::mapToItemResponse)
-                .collect(Collectors.toList());
+            .map(this::mapToItemResponse)
+            .collect(Collectors.toList());
 
         return SessionResponse.builder()
-                .id(session.getId())
-                .name(session.getTitle())
-                .isLocked(session.getIsLocked())
-                .shareUrl(generateShareUrl(sessionId))
-                .createdAt(session.getCreatedAt())
-                .expiresAt(session.getExpiresAt())
-                .items(items)
-                .build();
+            .id(session.getId())
+            .name(session.getName())
+            .isLocked(session.getIsLocked())
+            .items(items)
+            .build();
     }
 
     public SessionItemResponse addItem(String sessionId, AddItemRequest request) {
         Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found or expired"));
-
-        if (session.getExpiresAt() != null && session.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Session has expired");
-        }
+            .orElseThrow(() -> new RuntimeException("Session not found or expired"));
 
         SessionItem item = SessionItem.builder()
-                .id(UUID.randomUUID().toString())
-                .sessionId(sessionId)
-                .type(request.getType())
-                .s3Key(request.getS3Key())
-                .s3Url(request.getS3Url())
-                .content(request.getContent())
-                .fileName(request.getFileName())
-                .fileSize(request.getFileSize())
-                .uploadedBy(request.getUploadedBy())
-                .positionX(request.getPositionX())
-                .positionY(request.getPositionY())
-                .uploadedAt(LocalDateTime.now())
-                .expiration(session.getExpiration())
-                .build();
+            .id(UUID.randomUUID().toString())
+            .sessionId(sessionId)
+            .type(request.getType())
+            .s3Key(request.getS3Key())
+            .s3Url(request.getS3Url())
+            .fileName(request.getFileName())
+            .fileSize(request.getFileSize())
+            .positionX(request.getPositionX())
+            .positionY(request.getPositionY())
+            .uploadedAt(LocalDateTime.now())
+            .build();
 
         sessionItemRepository.save(item);
 
-        log.info("Item added to session {}: {} by {}", sessionId, item.getType(), item.getUploadedBy());
+        log.info("Item added to session {}: {}", sessionId, item.getType());
 
         return mapToItemResponse(item);
     }
 
     public void removeItem(String sessionId, String itemId) {
         SessionItem item = sessionItemRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("Item not found or expired"));
+            .orElseThrow(() -> new RuntimeException("Item not found or expired"));
 
         if (!item.getSessionId().equals(sessionId)) {
             throw new RuntimeException("Item does not belong to this session");
@@ -147,7 +114,7 @@ public class SessionService {
 
     public void deleteSession(String sessionId) {
         Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found"));
+            .orElseThrow(() -> new RuntimeException("Session not found"));
 
         List<SessionItem> items = sessionItemRepository.findBySessionId(sessionId);
         for (SessionItem item : items) {
@@ -182,9 +149,7 @@ public class SessionService {
     public void addUserToSession(String sessionId, String userId, String username) {
         String key = "session:" + sessionId + ":users";
         redisTemplate.opsForHash().put(key, userId, username);
-        redisTemplate.expire(key, Duration.ofHours(defaultExpirationHours + 1));
-
-        updateSessionActivity(sessionId);
+        redisTemplate.expire(key, Duration.ofHours(3));
     }
 
     public void removeUserFromSession(String sessionId, String userId) {
@@ -203,36 +168,82 @@ public class SessionService {
         return size.intValue();
     }
 
-    public void updateSessionActivity(String sessionId) {
-        String key = "session:" + sessionId + ":last_activity";
-        redisTemplate.opsForValue().set(key, LocalDateTime.now().toString());
-        redisTemplate.expire(key, Duration.ofHours(defaultExpirationHours + 1));
+    public List<SessionItem> getSessionItems(String sessionId) {
+        List<SessionItem> items = sessionItemRepository.findBySessionId(sessionId);
+
+        log.debug("Retrieved {} items from session {}", items.size(), sessionId);
+        return items;
     }
 
     private String generateSessionId() {
         return UUID.randomUUID().toString().substring(0, 8);
     }
 
-    private String generateUserId() {
-        return "user-" + UUID.randomUUID().toString().substring(0, 8);
+    public void updateItemPosition(String sessionId, String itemId, Double x, Double y) {
+        SessionItem item = sessionItemRepository.findById(itemId)
+            .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        if (!item.getSessionId().equals(sessionId)) {
+            throw new RuntimeException("Item does not belong to this session");
+        }
+
+        item.setPositionX(x);
+        item.setPositionY(y);
+
+        sessionItemRepository.save(item);
+        log.debug("Updated position for item {} in session {}: ({}, {})", itemId, sessionId, x, y);
     }
 
-    private String generateShareUrl(String sessionId) {
-        return frontendUrl + sessionId;
+    public Map<String, Double> getItemPosition(String sessionId, String itemId) {
+        String key = "session:" + sessionId + ":item:" + itemId + ":position";
+        Map<Object, Object> position = redisTemplate.opsForHash().entries(key);
+
+        if (position.isEmpty()) {
+            return null;
+        }
+
+        return Map.of(
+            "x", Double.parseDouble((String) position.get("x")),
+            "y", Double.parseDouble((String) position.get("y"))
+        );
+    }
+
+    public SessionResponse toggleSessionLock(String sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+            .orElseThrow(() -> new RuntimeException("Session not found"));
+
+        session.setIsLocked(!session.getIsLocked());
+        sessionRepository.save(session);
+        log.info("Session {} lock toggled to: {}", sessionId, session.getIsLocked());
+
+        return mapToSessionResponse(session);
+    }
+
+    private SessionResponse mapToSessionResponse(Session session) {
+        List<SessionItem> items = sessionItemRepository.findBySessionId(session.getId());
+
+        List<SessionItemResponse> itemResponses = items.stream()
+            .map(this::mapToItemResponse)
+            .collect(Collectors.toList());
+
+        return SessionResponse.builder()
+            .id(session.getId())
+            .name(session.getName())
+            .isLocked(session.getIsLocked())
+            .items(itemResponses)
+            .build();
     }
 
     private SessionItemResponse mapToItemResponse(SessionItem item) {
         return SessionItemResponse.builder()
-                .id(item.getId())
-                .type(item.getType())
-                .s3Url(item.getS3Url())
-                .content(item.getContent())
-                .fileName(item.getFileName())
-                .fileSize(item.getFileSize())
-                .uploadedBy(item.getUploadedBy())
-                .uploadedAt(item.getUploadedAt())
-                .positionX(item.getPositionX())
-                .positionY(item.getPositionY())
-                .build();
+            .id(item.getId())
+            .type(item.getType())
+            .s3Url(item.getS3Url())
+            .fileName(item.getFileName())
+            .fileSize(item.getFileSize())
+            .uploadedAt(item.getUploadedAt())
+            .positionX(item.getPositionX())
+            .positionY(item.getPositionY())
+            .build();
     }
 }

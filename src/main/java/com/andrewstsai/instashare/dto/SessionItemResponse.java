@@ -15,11 +15,9 @@ public class SessionItemResponse {
     private String id;
     private ItemType type;
     private String s3Url;
-    private String content;
     private String fileName;
     private Long fileSize;
-    private String uploadedBy;
     private LocalDateTime uploadedAt;
-    private Integer positionX;
-    private Integer positionY;
+    private Double positionX;
+    private Double positionY;
 }

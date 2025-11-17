@@ -3,8 +3,7 @@ package com.andrewstsai.instashare.model;
 public enum ItemType {
     IMAGE,
     FILE,
-    TEXT,
-    LINK,
+    PDF,
     VIDEO,
     AUDIO
 }

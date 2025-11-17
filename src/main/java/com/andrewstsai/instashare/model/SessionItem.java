@@ -26,18 +26,14 @@ public class SessionItem {
 
     private ItemType type;
     private String fileName;
-    private String originalFileName;
     private Long fileSize;
-    private String contentType;
     private String s3Key;
     private String s3Url;
     private String content;
-    private Integer positionX;
-    private Integer positionY;
-    private Integer zIndex;
-    private String uploadedBy;
+    private Double positionX;
+    private Double positionY;
     private LocalDateTime uploadedAt;
 
     @TimeToLive
-    private Integer expiration;
+    private Long ttl = 10800L;
 }

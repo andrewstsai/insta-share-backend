@@ -44,7 +44,7 @@ public class RedisConfig {
         if (!redisPassword.isBlank()) {config.setPassword(redisPassword);}
 
         LettuceClientConfiguration.LettuceClientConfigurationBuilder clientConfig =
-                LettuceClientConfiguration.builder();
+            LettuceClientConfiguration.builder();
 
         clientConfig.commandTimeout(Duration.ofSeconds(60));
 
@@ -66,15 +66,15 @@ public class RedisConfig {
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1))
-                .serializeKeysWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
-                .disableCachingNullValues();
+            .entryTtl(Duration.ofHours(1))
+            .serializeKeysWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+            .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
+            .disableCachingNullValues();
 
         return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(config)
-                .build();
+            .cacheDefaults(config)
+            .build();
     }
 }
