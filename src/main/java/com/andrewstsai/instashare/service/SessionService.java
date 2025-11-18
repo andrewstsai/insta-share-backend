@@ -10,7 +10,6 @@ import com.andrewstsai.instashare.repository.SessionItemRepository;
 import com.andrewstsai.instashare.repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -28,9 +27,6 @@ public class SessionService {
     private final SessionItemRepository sessionItemRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final S3Service s3Service;
-
-    @Value("${app.frontend.url}")
-    private String frontendUrl;
 
     public SessionResponse createSession(CreateSessionRequest request) {
         String sessionId = generateSessionId();

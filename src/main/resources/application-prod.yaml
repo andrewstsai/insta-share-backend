@@ -1,0 +1,33 @@
+spring:
+  data:
+    redis:
+      host: redis
+
+  docker:
+    compose:
+      enabled: false
+
+server:
+  compression:
+    enabled: true
+  http2:
+    enabled: true
+
+logging:
+  level:
+    root: WARN
+    com.andrewstsai.instashare: INFO
+    org.springframework.web: WARN
+  file:
+    name: /var/log/insta-share/application.log
+    max-size: 10MB
+    max-history: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

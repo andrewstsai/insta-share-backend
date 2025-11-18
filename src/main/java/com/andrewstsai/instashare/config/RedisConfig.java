@@ -28,20 +28,11 @@ public class RedisConfig {
     @Value("${spring.data.redis.port}")
     private int redisPort;
 
-    @Value("${spring.data.redis.username}")
-    private String redisUsername;
-
-    @Value("${spring.data.redis.password}")
-    private String redisPassword;
-
-
     @Bean
     public LettuceConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
         config.setHostName(redisHost);
         config.setPort(redisPort);
-        if (!redisUsername.isBlank()) {config.setUsername(redisUsername);}
-        if (!redisPassword.isBlank()) {config.setPassword(redisPassword);}
 
         LettuceClientConfiguration.LettuceClientConfigurationBuilder clientConfig =
             LettuceClientConfiguration.builder();
