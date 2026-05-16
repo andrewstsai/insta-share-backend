@@ -11,7 +11,7 @@
 	<groupId>com.andrewstsai</groupId>
 	<artifactId>insta-share</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Quick Share</name>
+	<name>Insta Share</name>
 	<description>Real-Time File Sharing</description>
 	<url/>
 	<licenses>
